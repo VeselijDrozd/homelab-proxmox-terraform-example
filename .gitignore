@@ -1,0 +1,22 @@
+# Terraform local files
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform variable files (can contain secrets)
+*.tfvars
+*.tfvars.json
+
+# Local CLI/config files
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Sensitive project files
+s3_backet_cred.sh
