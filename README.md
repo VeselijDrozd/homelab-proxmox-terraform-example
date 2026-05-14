@@ -2,12 +2,13 @@
 
 Пример Terraform-проекта для создания ВМ в Proxmox через внешний модуль:
 
-- модуль: [VeselijDrozd/terraform-proxmox-vm-module](https://github.com/VeselijDrozd/terraform-proxmox-vm-module)
-- source в проекте: `git::https://github.com/VeselijDrozd/terraform-proxmox-vm-module.git?ref=1.0.0`
+- модуль: [VeselijDrozd/terraform-proxmox-vm-module](https://github.com/VeselijDrozd/terraform-proxmox-vm-module) (в репозитории подключается как `source = "../terraform-proxmox-vm-module"`)
 
 ## Что делает проект
 
-- скачивает образы в datastore Proxmox (`proxmox_download_file`)
+- подготавливает образы в datastore Proxmox:
+  - **`url`** — Proxmox сам скачивает файл (`proxmox_download_file`);
+  - **`local_path`** — Terraform заливает файл с машины, где запущен `terraform` (`proxmox_virtual_environment_file`, для больших файлов нужен SSH к узлу, см. ниже);
 - создает ВМ из:
   - одиночных описаний в `vms`
   - групповых описаний в `vm_groups` + `count`
@@ -18,6 +19,7 @@
 - Terraform `>= 1.3`
 - доступ к Proxmox API
 - провайдер `bpg/proxmox`
+- если хотя бы один образ задан через **`local_path`**: SSH к узлу Proxmox (часто тот же пользователь `root`, что и для загрузки по SSH), в `terraform.tfvars` — `proxmox_ssh_private_key_path` и/или `proxmox_ssh_agent = true`
 
 ## Быстрый старт
 
@@ -33,6 +35,7 @@ cp terraform.tfvars.example terraform.tfvars
 - `main_password`
 - `vm_pass`
 - `pc_public_key_path`
+- при **`local_path`** у образа: `proxmox_ssh_private_key_path` (или `proxmox_ssh_agent`) и при необходимости `proxmox_ssh_username`
 
 3. Запуск:
 
@@ -46,15 +49,18 @@ terraform apply
 
 ### `images`
 
-Карта образов, которые будут загружены в Proxmox:
+Карта образов в datastore Proxmox. Для каждого ключа нужно указать **ровно одно**: `url` **или** `local_path`.
 
-- `datastore_id` - куда скачивать
-- `node_name` - узел Proxmox
-- `url` - URL cloud image
-- `file_name` - имя файла в datastore
-- `content_type` - опционально (`import` по умолчанию)
+- `datastore_id` — куда положить файл
+- `node_name` — узел Proxmox
+- `file_name` — имя файла в datastore (при `local_path` можно задать другое имя, чем у исходного файла). Для **`content_type = import`** Proxmox проверяет расширение: **`.img` часто отклоняется**; используйте **`.qcow2`** или **`.raw`** в соответствии с реальным форматом диска.
+- `content_type` — опционально (`import` по умолчанию)
+- `url` — URL, который **сервер Proxmox** скачивает сам
+- `local_path` — **абсолютный путь** к файлу на **машине с Terraform**; загрузка идёт через провайдер (для дисков обычно нужен SSH в блоке `provider "proxmox" { ssh { ... } }`)
+- `upload_timeout_seconds` — опционально (`7200`), только для `local_path`
+- `overwrite` — опционально (`true`)
 
-Пример:
+Скачивание с Ubuntu:
 
 ```hcl
 images = {
@@ -66,6 +72,24 @@ images = {
   }
 }
 ```
+
+Локальный образ (нужны `proxmox_ssh_*` в корне `terraform.tfvars`):
+
+```hcl
+proxmox_ssh_private_key_path = "/home/user/.ssh/id_ed25519"
+proxmox_ssh_username         = "root"
+
+images = {
+  ubuntu_jammy = {
+    datastore_id = "local"
+    node_name    = "pve"
+    local_path   = "/home/user/images/jammy-with-qemu-agent.img"
+    file_name    = "jammy-with-qemu-agent.qcow2"
+  }
+}
+```
+
+**Переход `url` ↔ `local_path`** для того же ключа образа меняет тип ресурса в state; может понадобиться `terraform state rm` старого ресурса образа или осознанный `replace`.
 
 ### `vms` (одиночные ВМ)
 

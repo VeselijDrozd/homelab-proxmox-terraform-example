@@ -25,15 +25,45 @@ variable "pc_public_key_path" {
   type        = string
 }
 
+variable "proxmox_ssh_username" {
+  description = "SSH user on Proxmox nodes (used for uploading local disk images to datastore)"
+  type        = string
+  default     = "root"
+}
+
+variable "proxmox_ssh_private_key_path" {
+  description = "Path to PEM private key for SSH uploads. Required (or set proxmox_ssh_agent) when any image uses local_path."
+  type        = string
+  default     = null
+}
+
+variable "proxmox_ssh_agent" {
+  description = "Use SSH agent for Proxmox uploads instead of proxmox_ssh_private_key_path"
+  type        = bool
+  default     = false
+}
+
 variable "images" {
-  description = "Image definitions to download to Proxmox datastore"
+  description = "Image definitions: either url (Proxmox downloads) or local_path (Terraform uploads from this machine)"
   type = map(object({
-    content_type = optional(string, "import")
-    datastore_id = string
-    node_name    = string
-    url          = string
-    file_name    = string
+    content_type           = optional(string, "import")
+    datastore_id           = string
+    node_name              = string
+    file_name              = string
+    url                    = optional(string)
+    local_path             = optional(string)
+    upload_timeout_seconds = optional(number, 7200)
+    overwrite              = optional(bool, true)
   }))
+
+  validation {
+    condition = alltrue([
+      for _, img in var.images :
+      (img.url != null && trimspace(img.url) != "" && (img.local_path == null || trimspace(img.local_path) == "")) ||
+      (img.local_path != null && trimspace(img.local_path) != "" && (img.url == null || trimspace(img.url) == ""))
+    ])
+    error_message = "Each image must set exactly one of: url, or local_path (not both, not neither)."
+  }
 }
 
 variable "vms" {
