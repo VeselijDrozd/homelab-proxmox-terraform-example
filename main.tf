@@ -91,6 +91,7 @@ module "vms" {
     memory_floating             = each.value.memory_floating
     disk_datastore_id           = each.value.disk_datastore_id
     disk_interface              = each.value.disk_interface
+    disk_size                   = try(each.value.disk_size, null)
     initialization_datastore_id = each.value.initialization_datastore_id
     ipv4_address                = each.value.ipv4_address
     username                    = each.value.username

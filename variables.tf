@@ -25,6 +25,30 @@ variable "pc_public_key_path" {
   type        = string
 }
 
+variable "vm_output_ipv4_prefix" {
+  description = "Only addresses starting with this string are included in output vm_ipv4_addresses (QEMU agent often reports 127.0.0.1 plus LAN)."
+  type        = string
+  default     = "10.10.10."
+}
+
+variable "ansible_inventory_path" {
+  description = "Path to generated Ansible inventory file (INI)"
+  type        = string
+  default     = "inventory.ini"
+}
+
+variable "ansible_ssh_private_key_file" {
+  description = "SSH private key path written to [all:vars] in the inventory (optional)"
+  type        = string
+  default     = null
+}
+
+variable "ansible_inventory_parent_group" {
+  description = "If set, adds [NAME:children] with all VM groups as children (e.g. k8s for k8s_master + k8s_worker)"
+  type        = string
+  default     = null
+}
+
 variable "proxmox_ssh_username" {
   description = "SSH user on Proxmox nodes (used for uploading local disk images to datastore)"
   type        = string
@@ -86,9 +110,11 @@ variable "vms" {
     memory_floating             = optional(number, 2048)
     disk_datastore_id           = string
     disk_interface              = optional(string, "scsi0")
+    disk_size                   = optional(number)
     initialization_datastore_id = string
     ipv4_address                = optional(string, "dhcp")
     username                    = optional(string, "ubuntu")
+    ansible_group               = optional(string)
     bridge                      = string
   }))
   default = {}
@@ -116,9 +142,11 @@ variable "vm_groups" {
       memory_floating             = optional(number, 2048)
       disk_datastore_id           = string
       disk_interface              = optional(string, "scsi0")
+      disk_size                   = optional(number)
       initialization_datastore_id = string
       ipv4_address                = optional(string, "dhcp")
       username                    = optional(string, "ubuntu")
+      ansible_group               = optional(string)
       bridge                      = string
     })
   }))

@@ -2,7 +2,7 @@
 
 Пример Terraform-проекта для создания ВМ в Proxmox через внешний модуль:
 
-- модуль: [VeselijDrozd/terraform-proxmox-vm-module](https://github.com/VeselijDrozd/terraform-proxmox-vm-module) (в репозитории подключается как `source = "../terraform-proxmox-vm-module"`)
+- модуль: [VeselijDrozd/terraform-proxmox-vm-module](https://github.com/VeselijDrozd/terraform-proxmox-vm-module) — в проекте: `source = "git::...?ref=v1.1.0"`
 
 ## Что делает проект
 
@@ -162,7 +162,8 @@ vm_groups = {
 ## Outputs
 
 - `vm_ids` - map VMID по ключам ВМ
-- `vm_names` - map имен ВМ по ключам
+- `vm_names` - map имён ВМ по ключам
+- `vm_ipv4_addresses` - map: ключ ВМ → список IPv4 из QEMU agent, **только** с префиксом `vm_output_ipv4_prefix` (по умолчанию `10.10.10.`), без `127.0.0.1`
 
 ## Файлы проекта
 

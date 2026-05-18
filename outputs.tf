@@ -9,17 +9,16 @@ output "vm_names" {
 }
 
 output "vm_ipv4_addresses" {
-  description = "IPv4 addresses from QEMU guest agent per VM (nested list: one inner list per NIC)"
-  value       = { for k, vm in module.vms : k => vm.ipv4_addresses }
+  description = "LAN IPv4 per VM key (from QEMU guest agent), only addresses with prefix vm_output_ipv4_prefix"
+  value = {
+    for k, vm in module.vms : k => tolist(distinct([
+      for ip in flatten(coalesce(vm.ipv4_addresses, [])) : ip
+      if startswith(ip, var.vm_output_ipv4_prefix)
+    ]))
+  }
 }
 
-output "vm_ipv4_primary" {
-  description = "First IPv4 from guest agent per VM key (null until agent reports or if none)"
-  value = {
-    for k, vm in module.vms : k => (
-      length(flatten(coalesce(vm.ipv4_addresses, []))) > 0
-      ? flatten(vm.ipv4_addresses)[0]
-      : null
-    )
-  }
+output "ansible_inventory_path" {
+  description = "Path to the generated Ansible inventory file"
+  value       = local_file.ansible_inventory.filename
 }
