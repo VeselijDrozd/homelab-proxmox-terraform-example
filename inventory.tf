@@ -33,13 +33,24 @@ locals {
       }
     ]
   }
+
+  # Nested [parent:children] sections; falls back to legacy single parent_group when hierarchy is empty.
+  ansible_inventory_hierarchy = length(var.ansible_inventory_hierarchy) > 0 ? var.ansible_inventory_hierarchy : (
+    var.ansible_inventory_parent_group != null && trimspace(var.ansible_inventory_parent_group) != "" ? {
+      (var.ansible_inventory_parent_group) = local.inventory_group_names
+    } : {}
+  )
+
+  ansible_inventory_hierarchy_sorted = {
+    for parent in sort(keys(local.ansible_inventory_hierarchy)) :
+    parent => local.ansible_inventory_hierarchy[parent]
+  }
 }
 
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/templates/inventory.ini.tpl", {
     ssh_private_key_file = coalesce(var.ansible_ssh_private_key_file, "")
-    parent_group         = coalesce(var.ansible_inventory_parent_group, "")
-    group_names          = local.inventory_group_names
+    hierarchy            = local.ansible_inventory_hierarchy_sorted
     groups               = local.inventory_groups
   })
   filename = var.ansible_inventory_path

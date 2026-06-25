@@ -44,9 +44,15 @@ variable "ansible_ssh_private_key_file" {
 }
 
 variable "ansible_inventory_parent_group" {
-  description = "If set, adds [NAME:children] with all VM groups as children (e.g. k8s for k8s_master + k8s_worker)"
+  description = "Deprecated: use ansible_inventory_hierarchy. If hierarchy is empty and this is set, adds a single [NAME:children] with all VM host groups as direct children."
   type        = string
   default     = null
+}
+
+variable "ansible_inventory_hierarchy" {
+  description = "Nested Ansible inventory groups: parent group name => list of child group names. Child groups may be meta-groups (other keys in this map) or VM host groups derived from vm_groups/vms."
+  type        = map(list(string))
+  default     = {}
 }
 
 variable "proxmox_ssh_username" {

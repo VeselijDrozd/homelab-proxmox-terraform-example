@@ -159,6 +159,54 @@ vm_groups = {
 Сначала разворачиваются `vm_groups`, затем мержатся с `vms`.
 Если ключ совпадает, запись из `vms` перезапишет сгенерированную групповую.
 
+### Ansible inventory
+
+После `terraform apply` генерируется INI-файл (`ansible_inventory_path`). Группы хостов
+берутся из ключей `vm_groups` / `vms` (например `k8s_master-01` → группа `k8s_master`).
+
+Вложенность задаётся через `ansible_inventory_hierarchy`:
+
+```hcl
+ansible_inventory_path       = "../Ansible/inventory.ini"
+ansible_ssh_private_key_file = "/home/user/.ssh/id_ed25519"
+
+ansible_inventory_hierarchy = {
+  homelab = ["k8s", "gitlab"]
+  k8s     = ["k8s_master", "k8s_worker"]
+  gitlab  = ["gitlab_server", "gitlab_runner"]
+}
+```
+
+Результат:
+
+```ini
+[homelab:children]
+k8s
+gitlab
+
+[k8s:children]
+k8s_master
+k8s_worker
+
+[gitlab:children]
+gitlab_server
+gitlab_runner
+
+[k8s_master]
+k8s-master-vm-01 ansible_host=10.10.10.124 ansible_user=ubuntu
+```
+
+Использование:
+
+```bash
+ansible-playbook k8s-cluster.yml --limit k8s
+ansible-playbook gitlab-server.yml --limit gitlab
+ansible-playbook site.yml --limit homelab
+```
+
+Устаревший вариант `ansible_inventory_parent_group` по-прежнему работает, если
+`ansible_inventory_hierarchy` пуст: все VM-группы становятся прямыми детьми одного родителя.
+
 ## Outputs
 
 - `vm_ids` - map VMID по ключам ВМ

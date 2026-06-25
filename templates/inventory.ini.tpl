@@ -5,13 +5,13 @@
 ansible_ssh_private_key_file=${ssh_private_key_file}
 
 %{ endif ~}
-%{ if parent_group != "" ~}
-[${parent_group}:children]
-%{ for group_name in group_names ~}
-${group_name}
+%{ for parent, children in hierarchy ~}
+[${parent}:children]
+%{ for child in children ~}
+${child}
 %{ endfor ~}
 
-%{ endif ~}
+%{ endfor ~}
 %{ for group_name, hosts in groups ~}
 [${group_name}]
 %{ for host in hosts ~}
